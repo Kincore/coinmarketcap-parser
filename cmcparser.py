@@ -7,19 +7,6 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
-def get_total_page_count(url):
-    response = requests.get(url)
-    if response.ok:
-        soup = BeautifulSoup(response.text, 'lxml')
-
-        total_pages = soup.find('ul', class_='pagination').find('li', class_='next').find_previous_sibling().\
-                    text.strip()
-
-        return int(total_pages)
-    else:
-        raise Exception("НЕ УДАЛОСЬ РАСПАРСИТЬ БАЗОВЫЙ URL. ПРОВЕРЬТЕ ПОДКЛЮЧЕНИЕ")
-
-
 def write_csv(data):
     with open('coins.csv', 'a', encoding="utf-8") as file:
         order = ['coin_name', 'coin_ticker', 'coin_market_cap', 'coin_price', 'coin_url']
@@ -28,6 +15,10 @@ def write_csv(data):
 
 
 def get_page_html(url):
+    response = requests.get(url)
+    if not response.ok:
+        print("Ответ сервера не 200. Возможно кончились страницы. Либо проверьте подключение")
+        exit()
     chrome_options = webdriver.ChromeOptions()
     chrome_options.add_argument(argument="--log-level=3")
     chrome_options.add_argument(argument="--headless")
@@ -101,13 +92,12 @@ def parse_url(html):
 
 def main():
     base_url = "https://www.coinmarketcap.com"
-    total_page_count = get_total_page_count(base_url)
 
-    url_generator = [f'https://coinmarketcap.com/?page={page}' for page in range(1, total_page_count+1)]
-
-    for url in url_generator:
+    page = 1
+    while True:
+        url = base_url + f'/?page={page}'
         parse_url(get_page_html(url))
-
+        page += 1
 
 if __name__ == "__main__":
     main()
